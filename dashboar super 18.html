@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Ventas - Análisis Interactivo</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3498db;
+            --primary-dark: #2980b9;
+            --secondary: #2c3e50;
+            --accent: #e74c3c;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --gray: #95a5a6;
+            --white: #ffffff;
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --hover-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--dark);
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: var(--white);
+            padding: 24px 30px;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 8px;
+            height: 100%;
+            background: var(--primary);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: var(--primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+        }
+
+        h1 {
+            color: var(--secondary);
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            color: var(--gray);
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 14px 28px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+        }
+
+        .filters-section {
+            background: var(--white);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 30px;
+            display: none;
+            transition: all 0.3s ease;
+        }
+
+        .filters-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .filter-group {
+            position: relative;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--light);
+            border-radius: 10px;
+            font-size: 14px;
+            color: var(--dark);
+            background: var(--white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232c3e50' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+        }
+
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: var(--white);
+            padding: 28px;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+        }
+
+        .kpi-card:nth-child(1)::before { background: var(--primary); }
+        .kpi-card:nth-child(2)::before { background: var(--success); }
+        .kpi-card:nth-child(3)::before { background: var(--warning); }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .kpi-icon {
+            font-size: 36px;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+        }
+
+        .kpi-card:nth-child(1) .kpi-icon { background: rgba(52, 152, 219, 0.1); color: var(--primary); }
+        .kpi-card:nth-child(2) .kpi-icon { background: rgba(39, 174, 96, 0.1); color: var(--success); }
+        .kpi-card:nth-child(3) .kpi-icon { background: rgba(243, 156, 18, 0.1); color: var(--warning); }
+
+        .kpi-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-label {
+            color: var(--gray);
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            color: var(--secondary);
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .kpi-change {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .positive { color: var(--success); }
+        .negative { color: var(--accent); }
+
+        .chart-section {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .chart-section:hover {
+            box-shadow: var(--hover-shadow);
+        }
+
+        .chart-title {
+            color: var(--secondary);
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--light);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-title i {
+            color: var(--primary);
+        }
+
+        .placeholder {
+            background: var(--white);
+            padding: 80px 40px;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .placeholder:hover {
+            box-shadow: var(--hover-shadow);
+        }
+
+        .placeholder-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            color: var(--primary);
+            opacity: 0.7;
+        }
+
+        .placeholder h2 {
+            color: var(--secondary);
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+
+        .placeholder p {
+            color: var(--gray);
+            font-size: 18px;
+            margin-bottom: 24px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .format-info {
+            background: var(--light);
+            padding: 24px;
+            border-radius: 12px;
+            text-align: left;
+            max-width: 600px;
+            margin: 0 auto 30px;
+        }
+
+        .format-info h3 {
+            color: var(--secondary);
+            font-size: 18px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .format-info ul {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+
+        .format-info li {
+            color: var(--dark);
+            font-size: 14px;
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .format-info li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .supported-formats {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(52, 152, 219, 0.1);
+            color: var(--primary);
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 16px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px;
+        }
+
+        .loading.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .spinner {
+            border: 4px solid rgba(52, 152, 219, 0.2);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        #content {
+            display: none;
+        }
+
+        #content.active {
+            display: block;
+            animation: fadeIn 0.8s ease;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--light);
+        }
+
+        .data-table th {
+            background-color: var(--light);
+            color: var(--secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+
+        .data-table tr:hover {
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
+        .export-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            background: #219653;
+            transform: translateY(-2px);
+        }
+
+        .clear-filters {
+            background: var(--gray);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .clear-filters:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--gray);
+            font-size: 14px;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 1200px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .kpi-value {
+                font-size: 24px;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .format-info ul {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div>
+                    <h1>Dashboard de Ventas</h1>
+                    <p class="subtitle">Análisis Interactivo de Rendimiento Comercial</p>
+                </div>
+            </div>
+            <label for="fileInput">
+                <div class="upload-btn">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span>Cargar Dataset</span>
+                </div>
+            </label>
+            <input type="file" id="fileInput" accept=".csv,.xls,.xlsx" style="display: none;">
+        </header>
+
+        <div id="placeholder" class="placeholder">
+            <div class="placeholder-icon">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <h2>No hay datos cargados</h2>
+            <p>Por favor, carga un archivo con tu dataset de ventas para visualizar el análisis</p>
+            <div class="supported-formats">
+                <i class="fas fa-check-circle"></i>
+                <span>Formatos soportados: CSV, XLS, XLSX</span>
+            </div>
+            <div class="format-info">
+                <h3><i class="fas fa-info-circle"></i> Estructura de datos requerida</h3>
+                <ul>
+                    <li><strong>Ventas</strong>: Cantidad de unidades vendidas</li>
+                    <li><strong>$Venta</strong>: Valor monetario de las ventas</li>
+                    <li><strong>Zona</strong>: Zona geográfica de la venta</li>
+                    <li><strong>Mes</strong>: Mes en que se realizó la venta</li>
+                    <li><strong>Marca</strong>: Marca del producto</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p style="color: var(--dark); font-size: 18px; font-weight: 600;">Cargando y procesando datos...</p>
+        </div>
+
+        <div id="content">
+            <div id="filters" class="filters-section">
+                <div class="filters-header">
+                    <h3 style="color: var(--secondary); font-size: 18px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-filter"></i> Filtros
+                    </h3>
+                    <button class="clear-filters" id="clearFilters">
+                        <i class="fas fa-times"></i> Limpiar Filtros
+                    </button>
+                </div>
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label>Marca</label>
+                        <select id="filtroMarca">
+                            <option value="Todas">Todas las Marcas</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Zona</label>
+                        <select id="filtroZona">
+                            <option value="Todas">Todas las Zonas</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Mes</label>
+                        <select id="filtroMes">
+                            <option value="Todos">Todos los Meses</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <span class="kpi-badge" style="background: rgba(52, 152, 219, 0.1); color: var(--primary);">INGRESOS</span>
+                    </div>
+                    <div class="kpi-label">Ventas Totales</div>
+                    <div class="kpi-value" id="ventasTotal">$0</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <span class="kpi-badge" style="background: rgba(39, 174, 96, 0.1); color: var(--success);">CANTIDAD</span>
+                    </div>
+                    <div class="kpi-label">Total Ventas (Unidades)</div>
+                    <div class="kpi-value" id="cantidadVentas">0</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-icon">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <span class="kpi-badge" style="background: rgba(243, 156, 18, 0.1); color: var(--warning);">PROMEDIO</span>
+                    </div>
+                    <div class="kpi-label">Venta Promedio</div>
+                    <div class="kpi-value" id="ventaPromedio">$0</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-section">
+                    <h2 class="chart-title"><i class="fas fa-tags"></i> Distribución por Marca</h2>
+                    <div id="chartMarcas"></div>
+                </div>
+
+                <div class="chart-section">
+                    <h2 class="chart-title"><i class="fas fa-map-marker-alt"></i> Ventas por Zona</h2>
+                    <div id="chartZonas"></div>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <h2 class="chart-title"><i class="fas fa-calendar-alt"></i> Tendencia de Ventas por Mes</h2>
+                <div id="chartMeses"></div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-section">
+                    <h2 class="chart-title"><i class="fas fa-chart-bar"></i> Top Marcas por Ventas</h2>
+                    <div id="chartTopMarcas"></div>
+                </div>
+
+                <div class="chart-section">
+                    <h2 class="chart-title"><i class="fas fa-chart-line"></i> Ventas por Zona Mensual</h2>
+                    <div id="chartZonaMensual"></div>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <h2 class="chart-title"><i class="fas fa-table"></i> Resumen de Datos</h2>
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>Ventas</th>
+                                <th>$Venta</th>
+                                <th>Zona</th>
+                                <th>Mes</th>
+                                <th>Marca</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Los datos se llenarán dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+                    <button class="export-btn" id="exportData">
+                        <i class="fas fa-file-export"></i> Exportar Datos
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Dashboard de Ventas &copy; 2023 - Análisis Interactivo</p>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let filtroMarca = 'Todas';
+        let filtroZona = 'Todas';
+        let filtroMes = 'Todos';
+
+        const formatCurrency = (value) => {
+            return new Intl.NumberFormat('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(value);
+        };
+
+        const formatNumber = (value) => {
+            return new Intl.NumberFormat('es-CO').format(value);
+        };
+
+        const getFilteredData = () => {
+            let filtered = allData;
+            
+            if (filtroMarca !== 'Todas') {
+                filtered = filtered.filter(row => row.Marca === filtroMarca);
+            }
+            
+            if (filtroZona !== 'Todas') {
+                filtered = filtered.filter(row => row.Zona === filtroZona);
+            }
+
+            if (filtroMes !== 'Todos') {
+                filtered = filtered.filter(row => row.Mes === filtroMes);
+            }
+            
+            return filtered;
+        };
+
+        const updateDashboard = () => {
+            const data = getFilteredData();
+            
+            // Calcular KPIs
+            const ventasTotal = data.reduce((sum, row) => sum + (parseFloat(row['$Venta']) || 0), 0);
+            const cantidadVentas = data.reduce((sum, row) => sum + (parseInt(row.Ventas) || 0), 0);
+            const ventaPromedio = cantidadVentas > 0 ? ventasTotal / cantidadVentas : 0;
+
+            // Actualizar KPIs
+            document.getElementById('ventasTotal').textContent = formatCurrency(ventasTotal);
+            document.getElementById('cantidadVentas').textContent = formatNumber(cantidadVentas);
+            document.getElementById('ventaPromedio').textContent = formatCurrency(ventaPromedio);
+
+            // Ventas por Marca
+            const marcasMap = {};
+            data.forEach(row => {
+                const marca = row.Marca || 'Sin Marca';
+                const venta = parseFloat(row['$Venta']) || 0;
+                if (!marcasMap[marca]) marcasMap[marca] = 0;
+                marcasMap[marca] += venta;
+            });
+
+            const marcasData = Object.entries(marcasMap).sort((a, b) => b[1] - a[1]);
+
+            Plotly.newPlot('chartMarcas', [{
+                type: 'pie',
+                labels: marcasData.map(m => m[0]),
+                values: marcasData.map(m => m[1]),
+                marker: {
+                    colors: ['#3498db', '#2980b9', '#1abc9c', '#27ae60', '#f39c12', '#e74c3c', '#9b59b6', '#34495e', '#16a085', '#d35400']
+                },
+                textinfo: 'label+percent',
+                hovertemplate: '<b>%{label}</b><br>Ventas: %{value:$,.0f}<br>Porcentaje: %{percent}<extra></extra>',
+                textposition: 'inside',
+                insidetextorientation: 'radial'
+            }], {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                font: { family: 'Segoe UI, sans-serif', color: '#2c3e50' },
+                margin: { t: 20, b: 20, l: 20, r: 20 },
+                showlegend: true,
+                legend: { orientation: 'h', x: 0, y: -0.1 }
+            }, { responsive: true });
+
+            // Ventas por Zona
+            const zonasMap = {};
+            data.forEach(row => {
+                const zona = row.Zona || 'Sin Zona';
+                const venta = parseFloat(row['$Venta']) || 0;
+                if (!zonasMap[zona]) zonasMap[zona] = 0;
+                zonasMap[zona] += venta;
+            });
+
+            const zonasData = Object.entries(zonasMap).sort((a, b) => b[1] - a[1]);
+
+            Plotly.newPlot('chartZonas', [{
+                type: 'bar',
+                x: zonasData.map(z => z[0]),
+                y: zonasData.map(z => z[1]),
+                marker: {
+                    color: '#3498db',
+                    line: { width: 0 }
+                },
+                text: zonasData.map(z => formatCurrency(z[1])),
+                textposition: 'auto',
+                hovertemplate: '<b>Zona %{x}</b><br>Ventas: %{text}<extra></extra>'
+            }], {
+                xaxis: { title: 'Zona', type: 'category', gridcolor: '#f0f0f0' },
+                yaxis: { title: 'Ventas ($)', gridcolor: '#f0f0f0' },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { family: 'Segoe UI, sans-serif', color: '#2c3e50' },
+                margin: { t: 20, b: 60, l: 80, r: 20 },
+                hoverlabel: { bgcolor: '#2c3e50', font: { color: 'white' } }
+            }, { responsive: true });
+
+            // Ventas por Mes
+            const mesesMap = {};
+            data.forEach(row => {
+                const mes = row.Mes || 'Sin Mes';
+                const venta = parseFloat(row['$Venta']) || 0;
+                if (!mesesMap[mes]) mesesMap[mes] = 0;
+                mesesMap[mes] += venta;
+            });
+
+            const mesesOrden = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const mesesData = Object.entries(mesesMap)
+                .sort((a, b) => {
+                    const indexA = mesesOrden.indexOf(a[0]);
+                    const indexB = mesesOrden.indexOf(b[0]);
+                    return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+                });
+
+            Plotly.newPlot('chartMeses', [{
+                type: 'scatter',
+                mode: 'lines+markers',
+                x: mesesData.map(m => m[0]),
+                y: mesesData.map(m => m[1]),
+                line: {
+                    color: '#3498db',
+                    width: 4,
+                    shape: 'spline'
+                },
+                marker: {
+                    size: 10,
+                    color: '#2980b9'
+                },
+                fill: 'tozeroy',
+                fillcolor: 'rgba(52, 152, 219, 0.1)',
+                hovertemplate: '<b>%{x}</b><br>Ventas: $%{y:,.0f}<extra></extra>'
+            }], {
+                xaxis: { title: 'Mes', gridcolor: '#f0f0f0' },
+                yaxis: { title: 'Ventas ($)', gridcolor: '#f0f0f0' },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { family: 'Segoe UI, sans-serif', color: '#2c3e50' },
+                margin: { t: 20, b: 60, l: 80, r: 20 },
+                hoverlabel: { bgcolor: '#2c3e50', font: { color: 'white' } }
+            }, { responsive: true });
+
+            // Top Marcas por Ventas
+            const topMarcasData = marcasData.slice(0, 10);
+
+            Plotly.newPlot('chartTopMarcas', [{
+                type: 'bar',
+                x: topMarcasData.map(m => m[1]),
+                y: topMarcasData.map(m => m[0]),
+                orientation: 'h',
+                marker: {
+                    color: topMarcasData.map((_, i) => {
+                        const colors = ['#3498db', '#2980b9', '#1abc9c', '#27ae60', '#f39c12', '#e74c3c', '#9b59b6', '#34495e', '#16a085', '#d35400'];
+                        return colors[i % colors.length];
+                    }),
+                    line: { width: 0 }
+                },
+                text: topMarcasData.map(m => formatCurrency(m[1])),
+                textposition: 'auto',
+                hovertemplate: '<b>%{y}</b><br>Ventas: %{text}<extra></extra>'
+            }], {
+                yaxis: { title: 'Marca', automargin: true },
+                xaxis: { title: 'Ventas ($)', gridcolor: '#f0f0f0' },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { family: 'Segoe UI, sans-serif', color: '#2c3e50' },
+                margin: { t: 20, b: 60, l: 150, r: 20 },
+                hoverlabel: { bgcolor: '#2c3e50', font: { color: 'white' } }
+            }, { responsive: true });
+
+            // Ventas por Zona y Mes
+            const zonaMesMap = {};
+            data.forEach(row => {
+                const zona = row.Zona || 'Sin Zona';
+                const mes = row.Mes || 'Sin Mes';
+                const venta = parseFloat(row['$Venta']) || 0;
+                
+                if (!zonaMesMap[zona]) zonaMesMap[zona] = {};
+                if (!zonaMesMap[zona][mes]) zonaMesMap[zona][mes] = 0;
+                zonaMesMap[zona][mes] += venta;
+            });
+
+            // Preparar datos para el gráfico de líneas por zona
+            const zonas = Object.keys(zonaMesMap);
+            const meses = [...new Set(data.map(row => row.Mes).filter(Boolean))].sort((a, b) => {
+                const indexA = mesesOrden.indexOf(a);
+                const indexB = mesesOrden.indexOf(b);
+                return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+            });
+
+            const traces = zonas.map((zona, index) => {
+                const colores = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#d35400', '#c0392b', '#16a085'];
+                return {
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: zona,
+                    x: meses,
+                    y: meses.map(mes => zonaMesMap[zona][mes] || 0),
+                    line: {
+                        color: colores[index % colores.length],
+                        width: 3
+                    },
+                    marker: {
+                        size: 8,
+                        color: colores[index % colores.length]
+                    },
+                    hovertemplate: `<b>${zona} - %{x}</b><br>Ventas: $%{y:,.0f}<extra></extra>`
+                };
+            });
+
+            Plotly.newPlot('chartZonaMensual', traces, {
+                xaxis: { title: 'Mes', gridcolor: '#f0f0f0' },
+                yaxis: { title: 'Ventas ($)', gridcolor: '#f0f0f0' },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { family: 'Segoe UI, sans-serif', color: '#2c3e50' },
+                margin: { t: 20, b: 60, l: 80, r: 20 },
+                hoverlabel: { bgcolor: '#2c3e50', font: { color: 'white' } },
+                legend: { orientation: 'h', x: 0, y: -0.2 }
+            }, { responsive: true });
+
+            // Actualizar tabla de datos
+            updateDataTable(data);
+        };
+
+        const updateDataTable = (data) => {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            // Mostrar solo las primeras 20 filas para no sobrecargar la tabla
+            const displayData = data.slice(0, 20);
+            
+            displayData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${formatNumber(parseInt(row.Ventas) || 0)}</td>
+                    <td>${formatCurrency(parseFloat(row['$Venta']) || 0)}</td>
+                    <td>${row.Zona || 'N/A'}</td>
+                    <td>${row.Mes || 'N/A'}</td>
+                    <td>${row.Marca || 'N/A'}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            // Si hay más datos, mostrar un mensaje
+            if (data.length > 20) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="5" style="text-align: center; font-style: italic; color: #7f8c8d;">Mostrando 20 de ${data.length} registros. Usa los filtros para refinar los resultados.</td>`;
+                tableBody.appendChild(tr);
+            }
+        };
+
+        const populateFilters = () => {
+            const marcas = [...new Set(allData.map(row => row.Marca).filter(Boolean))].sort();
+            const zonas = [...new Set(allData.map(row => row.Zona).filter(Boolean))].sort();
+            const meses = [...new Set(allData.map(row => row.Mes).filter(Boolean))];
+
+            const mesesOrden = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const mesesOrdenados = meses.sort((a, b) => {
+                const indexA = mesesOrden.indexOf(a);
+                const indexB = mesesOrden.indexOf(b);
+                return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+            });
+
+            const selectMarca = document.getElementById('filtroMarca');
+            const selectZona = document.getElementById('filtroZona');
+            const selectMes = document.getElementById('filtroMes');
+
+            selectMarca.innerHTML = '<option value="Todas">Todas las Marcas</option>';
+            marcas.forEach(marca => {
+                selectMarca.innerHTML += `<option value="${marca}">${marca}</option>`;
+            });
+
+            selectZona.innerHTML = '<option value="Todas">Todas las Zonas</option>';
+            zonas.forEach(zona => {
+                selectZona.innerHTML += `<option value="${zona}">${zona}</option>`;
+            });
+
+            selectMes.innerHTML = '<option value="Todos">Todos los Meses</option>';
+            mesesOrdenados.forEach(mes => {
+                selectMes.innerHTML += `<option value="${mes}">${mes}</option>`;
+            });
+        };
+
+        const processExcelFile = (file) => {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    
+                    allData = jsonData;
+                    
+                    document.getElementById('loading').classList.remove('active');
+                    document.getElementById('content').classList.add('active');
+                    document.getElementById('filters').classList.add('active');
+
+                    populateFilters();
+                    updateDashboard();
+                } catch (error) {
+                    console.error('Error al procesar Excel:', error);
+                    alert('Error al procesar el archivo Excel. Verifica que tenga el formato correcto.');
+                    document.getElementById('loading').classList.remove('active');
+                    document.getElementById('placeholder').style.display = 'block';
+                }
+            };
+            
+            reader.onerror = (error) => {
+                console.error('Error al leer archivo:', error);
+                alert('Error al leer el archivo');
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('placeholder').style.display = 'block';
+            };
+            
+            reader.readAsArrayBuffer(file);
+        };
+
+        const processCSVFile = (file) => {
+            Papa.parse(file, {
+                header: true,
+                dynamicTyping: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    allData = results.data;
+                    
+                    document.getElementById('loading').classList.remove('active');
+                    document.getElementById('content').classList.add('active');
+                    document.getElementById('filters').classList.add('active');
+
+                    populateFilters();
+                    updateDashboard();
+                },
+                error: (error) => {
+                    console.error('Error al procesar CSV:', error);
+                    alert('Error al cargar el archivo CSV');
+                    document.getElementById('loading').classList.remove('active');
+                    document.getElementById('placeholder').style.display = 'block';
+                }
+            });
+        };
+
+        const exportData = () => {
+            const data = getFilteredData();
+            
+            // Crear un libro de Excel
+            const wb = XLSX.utils.book_new();
+            
+            // Crear una hoja con los datos
+            const ws = XLSX.utils.json_to_sheet(data);
+            
+            // Añadir la hoja al libro
+            XLSX.utils.book_append_sheet(wb, ws, "Datos Filtrados");
+            
+            // Guardar el archivo
+            XLSX.writeFile(wb, "datos_ventas_filtrados.xlsx");
+        };
+
+        // Event Listeners
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('placeholder').style.display = 'none';
+            document.getElementById('loading').classList.add('active');
+
+            const fileName = file.name.toLowerCase();
+            
+            if (fileName.endsWith('.csv')) {
+                processCSVFile(file);
+            } else if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
+                processExcelFile(file);
+            } else {
+                alert('Formato de archivo no soportado. Por favor usa CSV, XLS o XLSX');
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('placeholder').style.display = 'block';
+            }
+        });
+
+        document.getElementById('filtroMarca').addEventListener('change', (e) => {
+            filtroMarca = e.target.value;
+            updateDashboard();
+        });
+
+        document.getElementById('filtroZona').addEventListener('change', (e) => {
+            filtroZona = e.target.value;
+            updateDashboard();
+        });
+
+        document.getElementById('filtroMes').addEventListener('change', (e) => {
+            filtroMes = e.target.value;
+            updateDashboard();
+        });
+
+        document.getElementById('clearFilters').addEventListener('click', () => {
+            document.getElementById('filtroMarca').value = 'Todas';
+            document.getElementById('filtroZona').value = 'Todas';
+            document.getElementById('filtroMes').value = 'Todos';
+            
+            filtroMarca = 'Todas';
+            filtroZona = 'Todas';
+            filtroMes = 'Todos';
+            
+            updateDashboard();
+        });
+
+        document.getElementById('exportData').addEventListener('click', exportData);
+    </script>
+</body>
+</html>
