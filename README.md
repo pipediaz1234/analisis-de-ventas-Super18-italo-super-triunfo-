@@ -25,7 +25,7 @@ A continuación se detallan los pasos para utilizarlo correctamente:
 ### 🧾 **1. Descargar el Dataset**
 Descarga el archivo de datos en formato `.xlsx` que contiene las ventas registradas.  
 Puedes obtenerlo desde el repositorio o desde una fuente local.  
-> 📂 *Ejemplo: ventas_super18.xlsx*
+> 📂 * ventas_consolidadas.xlsx* *se encuentra en el repositorio para descargarlo y hacer el analisis correspondiente*
 
 ---
 
