@@ -1,4 +1,4 @@
-# 📊 Dashboard de Análisis de Ventas – Super 18, Ítalo y Super Triunfo  
+# 📊 Dashboard de Análisis de Ventas – Super 18 (Marcas) Ítalo , Super, Triunfo  
 
 <img width="662" height="983" alt="image" src="https://github.com/user-attachments/assets/c28115fd-b9e9-4d30-ba7f-6c093c72edec" />
 
